@@ -1,0 +1,10 @@
+{
+	"authors": [
+		"Robert Schadek"
+	],
+	"copyright": "Copyright © 2021, Symmetry Investments",
+	"description": "Functions to auth a (username|email/password) pair against ldap, active directory",
+	"license": "ALGP3",
+	"name": "ldapauth",
+	"libs" : ["ldap", "lber"]
+}
