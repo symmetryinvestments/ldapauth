@@ -145,7 +145,7 @@ private int tool_bind_local(LDAP *ld, char* passLocal, char* binddn) @trusted {
 		sctrlsp, null, &msgid);
 	if(msgid == -1) {
 		tool_exit(ld, rc);
-		throw new Exception(format("ldap_sasl_bind(SIMPLE) %d", rc));
+		throw new Exception(format("ldap_sasl_bind: %s (code: 0x%x)", fromStringz(ldap_err2string(rc)), rc));
 	}
 
 	scope(failure) {
@@ -177,22 +177,22 @@ private int tool_bind_local(LDAP *ld, char* passLocal, char* binddn) @trusted {
 	return 0;
 }
 
-/**
+/*
 int main(string[] args) {
-	string un = "testuser@email.com";
-	//string pwd = "password";
+	string un = "testuser@host.com";
+	string pwd = "$ymm3try86!";
 
-	string host = "host.name.com";
+	string host = "ad.host.com";
 	LDAPLoginResult ret = login(host, un, pwd);
 	writeln(ret);
 	return ret.returnCode;
 }*/
+
 struct LDAPLoginResult {
 	int returnCode;
 	string userId;
 }
 
-/// Ditto
 LDAPLoginResult login(string host, string username, string password) @trusted {
 	import std.string : toStringz;
 	import std.conv : to;
@@ -223,15 +223,15 @@ LDAPLoginResult login(string host, string username, string password) @trusted {
 	/* LDAPv3 only */
 
 	ld = tool_conn_setup_local(ldaphost, 389);
-	enforce(ld != null, format("failed to connected"));
+	enforce(ld != null, format("Failed to connect to LDAP server"));
 
 	int ret = tool_bind_local( ld, cast(char*)toStringz(password), binddn);
 
-	enforce(ret == LDAP_SUCCESS, format("Failed to bind with %d", ret));
+	enforce(ret == LDAP_SUCCESS, format("LDAP bind failed: %s (code: 0x%x)", fromStringz(ldap_err2string(ret)), ret));
 
 	rc = ldap_whoami( ld, null, null, &id );
 
-	enforce(ret == LDAP_SUCCESS, format("ldap_whoami failed %d", rc));
+	enforce(ret == LDAP_SUCCESS, format("ldap_whoami failed: %s (code: 0x%x)", fromStringz(ldap_err2string(rc)), rc));
 
 	for( ; ; ) {
 		scope(failure) {
@@ -244,7 +244,7 @@ LDAPLoginResult login(string host, string username, string password) @trusted {
 		tv.tv_usec = 100000;
 
 		rc = ldap_result( ld, LDAP_RES_ANY, LDAP_MSG_ALL, &tv, &res );
-		enforce(rc >= 0, format("ldap_result %d", rc));
+		enforce(rc >= 0, format("ldap_result: %s (code: 0x%x)", fromStringz(ldap_err2string(rc)), rc));
 
 		if(rc != 0) {
 			break;
@@ -258,10 +258,10 @@ LDAPLoginResult login(string host, string username, string password) @trusted {
 		rc = code;
 	}
 
-	enforce(rc == LDAP_SUCCESS, format("ldap_parse_result %d", rc));
+	enforce(rc == LDAP_SUCCESS, format("ldap_parse_result: %s (code: 0x%x)", fromStringz(ldap_err2string(rc)), rc));
 
 	rc = ldap_parse_whoami( ld, res, &authzid );
-	enforce(rc == LDAP_SUCCESS, format("ldap_parse_whoami %d", rc));
+	enforce(rc == LDAP_SUCCESS, format("ldap_parse_whoami: %s (code: 0x%x)", fromStringz(ldap_err2string(rc)), rc));
 
 	LDAPLoginResult rslt;
 	if(authzid != null) {
